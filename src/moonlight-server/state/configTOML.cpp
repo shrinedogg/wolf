@@ -217,8 +217,15 @@ Config load_or_default(const std::string &source,
   // First check the version of the config file
   auto base_cfg = rfl::toml::load<BaseConfig, rfl::DefaultIfMissing>(source).value();
   auto version = base_cfg.config_version.value_or(0);
-  if (version <= 6) {
-    logs::log(logs::warning, "Found old config file (v{}), migrating to v7", version);
+  if (version <= 7) {
+    // v8 rewrites the default gstreamer video pipeline to introduce the
+    // party-mode compositor (wolf_party_video) and its primary/secondary
+    // capsfilters. Pipelines authored against v7-or-older templates do not
+    // contain these elements, so party-mode layout changes silently no-op on
+    // them. Regenerate the file from the current defaults and carry over
+    // identity, pairings, and profiles; user-authored per-app pipelines in
+    // profiles are preserved as-is.
+    logs::log(logs::warning, "Found old config file (v{}), migrating to v8", version);
     auto backup = source + ".v" + std::to_string(version) + ".old";
     std::filesystem::rename(source, backup);
     auto old_cfg = toml::parse_file(backup);
@@ -243,7 +250,7 @@ Config load_or_default(const std::string &source,
     }
     out_file << new_cfg;
     out_file.close();
-    logs::log(logs::debug, "Migrated config from v{} to v7", version);
+    logs::log(logs::debug, "Migrated config from v{} to v8", version);
   }
 
   // Will throw if the config is invalid
@@ -254,12 +261,12 @@ Config load_or_default(const std::string &source,
   if (default_gst_video_settings.default_source.find("name=interpipesrc") == std::string::npos) {
     logs::log(logs::debug, "Found interpipesrc without name, adding it");
     default_gst_video_settings.default_source =
-        default_gst_video_settings.default_source.replace(0, 12, "interpipesrc name=interpipesrc_{}_video");
+        default_gst_video_settings.default_source.replace(0, 12, "interpipesrc name=interpipesrc_{session_id}_video");
   }
   if (default_gst_audio_settings.default_source.find("name=interpipesrc") == std::string::npos) {
     logs::log(logs::debug, "Found interpipesrc without name, adding it");
     default_gst_audio_settings.default_source =
-        default_gst_audio_settings.default_source.replace(0, 12, "interpipesrc name=interpipesrc_{}_audio");
+        default_gst_audio_settings.default_source.replace(0, 12, "interpipesrc name=interpipesrc_{session_id}_audio");
   }
 
   auto default_gst_encoder_settings = default_gst_video_settings.defaults;
