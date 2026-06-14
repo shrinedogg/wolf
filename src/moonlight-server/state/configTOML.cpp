@@ -134,6 +134,7 @@ parse_apps(const std::vector<BaseApp> &apps,
            const std::string &h264_video_params,
            const std::string &hevc_video_params,
            const std::string &av1_video_params,
+           bool support_hdr,
            const BaseAppAudioOverride &default_audio_settings,
            SessionsAtoms running_sessions,
            const std::shared_ptr<events::EventBusType> &ev_bus) {
@@ -188,7 +189,7 @@ parse_apps(const std::vector<BaseApp> &apps,
         return immer::box<events::App>{
             events::App{.base = {.title = app.title,
                                  .id = generate_app_id(app),
-                                 .support_hdr = false,
+                                 .support_hdr = support_hdr,
                                  .icon_png_path = app.icon_png_path},
                         .video_producer_buffer_caps = default_video_settings.producer_buffer_caps.value(),
                         .h264_gst_pipeline = h264_gst_pipeline,
@@ -282,6 +283,11 @@ Config load_or_default(const std::string &source,
   }
   auto hevc_encoder = get_encoder("h265", default_gst_render_node, default_gst_video_settings.hevc_encoders, vendor);
   auto av1_encoder = get_encoder("av1", default_gst_render_node, default_gst_video_settings.av1_encoders, vendor);
+
+  // HDR (HEVC Main10) is opt-in while the rest of the pipeline lands; gate behind
+  // an env so we don't advertise Main10 before we can actually produce it.
+  bool support_hdr =
+      hevc_encoder.has_value() && utils::get_env("WOLF_ENABLE_HDR", "FALSE") == std::string("TRUE");
 
   /* Get paired clients */
   auto paired_clients =
@@ -391,6 +397,7 @@ Config load_or_default(const std::string &source,
                                                               h264_video_params,
                                                               hevc_video_params,
                                                               av1_video_params,
+                                                              support_hdr,
                                                               default_base_audio,
                                                               running_sessions,
                                                               ev_bus)};
@@ -403,6 +410,7 @@ Config load_or_default(const std::string &source,
                 .config_source = source,
                 .support_hevc = hevc_encoder.has_value(),
                 .support_av1 = av1_encoder.has_value() && encoder_type(*av1_encoder) != SOFTWARE,
+                .support_hdr = support_hdr,
                 .paired_clients = clients_atom,
                 .profiles = profiles_atom};
 }

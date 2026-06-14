@@ -159,6 +159,7 @@ TEST_CASE("Mocked serverinfo", "[MoonlightProtocol]") {
                              displayModes,
                              false,
                              true,
+                             false,
                              false);
 
     REQUIRE(xml_to_str(result) ==
@@ -196,7 +197,8 @@ TEST_CASE("Mocked serverinfo", "[MoonlightProtocol]") {
                              displayModes,
                              true,
                              false,
-                             true);
+                             true,
+                             false);
 
     REQUIRE(xml_to_str(result) ==
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
