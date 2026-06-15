@@ -41,9 +41,12 @@ RUN <<_GST_WAYLAND_DISPLAY
     #!/bin/bash
     set -e
 
-    git clone https://github.com/games-on-whales/gst-wayland-display
+    # HDR / HEVC Main10: build from the shrinedogg fork which adds 10-bit RGB10A2
+    # producer caps, the color-management-v1 capture, and the BT.2020/PQ two-pass
+    # render. Pinned to the Phase 1 HDR commit on feat/hdr-hevc-main10.
+    git clone https://github.com/shrinedogg/gst-wayland-display
     cd gst-wayland-display
-    git checkout b15285a
+    git checkout 2e01aa9
     # Pinned because it can cause issues when RUST_VERSION isn't the absolute latest
     cargo install cargo-c@0.10.23 --locked
     cargo cinstall --features="cuda" --prefix=/usr/local/lib/x86_64-linux-gnu/ --libdir=/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
@@ -120,6 +123,10 @@ ENV WOLF_CFG_FOLDER=/etc/wolf/cfg
 
 COPY --from=wolf-builder /wolf/wolf /wolf/wolf
 COPY --from=wolf-builder /wolf/fake-udev /wolf/fake-udev
+
+# Let the custom compositor advertise the 10-bit RGB10A2 format (HEVC Main10 / HDR).
+# The plugin matches "1|true|yes|on" (lowercase), so keep this as 1, not TRUE.
+ENV GST_WAYLAND_DISPLAY_ENABLE_10BIT=1
 
 ENV GST_GL_API=gles2 \
     GST_GL_PLATFORM=egl \

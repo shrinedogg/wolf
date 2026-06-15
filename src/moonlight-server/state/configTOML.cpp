@@ -308,6 +308,14 @@ Config load_or_default(const std::string &source,
     switch (video_encoder) {
     case NVIDIA: {
       default_base_video.producer_buffer_caps = "video/x-raw(memory:CUDAMemory)";
+      // For HDR (HEVC Main10) we need a genuine 10-bit capture from the compositor.
+      // Request RGB10A2 so the BT.2020/PQ frame keeps its bit depth all the way to
+      // the P010/Main10 encode; SDR sessions still down-convert RGB10A2 -> NV12 in
+      // the consumer pipeline. Requires the gst-wayland-display HDR build with
+      // GST_WAYLAND_DISPLAY_ENABLE_10BIT=1.
+      if (support_hdr) {
+        default_base_video.producer_buffer_caps = "video/x-raw(memory:CUDAMemory), format=RGB10A2_LE";
+      }
       break;
     }
     case VAAPI:
