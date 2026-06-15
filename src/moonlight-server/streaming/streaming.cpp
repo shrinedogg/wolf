@@ -377,6 +377,10 @@ void start_streaming_video(immer::box<events::VideoSession> video_session,
                            std::shared_ptr<immer::atom<gst_video_context::gst_context_ptr>> video_context,
                            std::shared_ptr<udp::socket> video_socket) {
   auto [color_range, color_space] = get_color_params(video_session);
+  // HDR (BT.2020) sessions need a 10-bit encode path: P010 + HEVC Main10.
+  bool is_hdr = video_session->color_space == events::ColorSpace::BT2020;
+  std::string video_format = is_hdr ? "P010_10LE" : "NV12";
+  std::string profile = is_hdr ? "main-10" : "main";
 
   auto pipeline = fmt::format(
       fmt::runtime(video_session->gst_pipeline),
@@ -394,6 +398,8 @@ void start_streaming_video(immer::box<events::VideoSession> video_session,
       fmt::arg("vbv_buffer_size", video_session->bitrate_kbps / video_session->display_mode.refreshRate),
       fmt::arg("color_space", color_space),
       fmt::arg("color_range", color_range),
+      fmt::arg("video_format", video_format),
+      fmt::arg("profile", profile),
       fmt::arg("host_port", video_session->port));
   logs::log(logs::debug, "Starting video pipeline: \n{}", pipeline);
 
