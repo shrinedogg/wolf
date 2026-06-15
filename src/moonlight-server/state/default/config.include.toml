@@ -337,13 +337,13 @@ video_params = """
 cudaupload !
 cudaconvertscale add-borders=true !
 video/x-raw(memory:CUDAMemory), width={width}, height={height}, \
-chroma-site={color_range}, format={video_format}, colorimetry={color_space}, pixel-aspect-ratio=1/1\
+chroma-site={color_range}, format={video_format}, colorimetry={color_space}, pixel-aspect-ratio=1/1{hdr_metadata}\
 """
 
 video_params_zero_copy = """
 cudaupload !
 cudaconvertscale add-borders=true !
-video/x-raw(memory:CUDAMemory),format={video_format}, width={width}, height={height}, colorimetry={color_space}, pixel-aspect-ratio=1/1
+video/x-raw(memory:CUDAMemory),format={video_format}, width={width}, height={height}, colorimetry={color_space}, pixel-aspect-ratio=1/1{hdr_metadata}
 """
 
 [gstreamer.video.defaults.qsv]

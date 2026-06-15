@@ -300,6 +300,15 @@ struct StopStreamEvent {
   std::size_t session_id;
 };
 
+/**
+ * Tells the control stream to (un)signal HDR mode to the connected Moonlight
+ * client. Fired from the video pipeline once the negotiated color space is known.
+ */
+struct HDRModeEvent {
+  std::size_t session_id;
+  bool enabled;
+};
+
 struct ClientWolfUIComboEvent {
   std::size_t session_id;
 };
@@ -334,7 +343,7 @@ struct StartRunner {
   std::shared_ptr<StreamSession> stream_session;
 };
 
-using EventBusHandlers = dp::handler_registration<immer::box<PlugDeviceEvent>,
+using EventBusHandlers = dp::handler_registration<immer::box<HDRModeEvent>, immer::box<PlugDeviceEvent>,
                                                   immer::box<PairSignal>,
                                                   immer::box<UnplugDeviceEvent>,
                                                   immer::box<StreamSession>,
@@ -355,7 +364,7 @@ using EventBusHandlers = dp::handler_registration<immer::box<PlugDeviceEvent>,
                                                   immer::box<SwitchStreamProducerEvents>,
                                                   immer::box<DockerContainerCreated>,
                                                   immer::box<DockerContainerStopped>>;
-using EventBusType = dp::event_bus<immer::box<PlugDeviceEvent>,
+using EventBusType = dp::event_bus<immer::box<HDRModeEvent>, immer::box<PlugDeviceEvent>,
                                    immer::box<PairSignal>,
                                    immer::box<UnplugDeviceEvent>,
                                    immer::box<StreamSession>,
@@ -376,7 +385,7 @@ using EventBusType = dp::event_bus<immer::box<PlugDeviceEvent>,
                                    immer::box<SwitchStreamProducerEvents>,
                                    immer::box<DockerContainerCreated>,
                                    immer::box<DockerContainerStopped>>;
-using EventsVariant = std::variant<immer::box<PlugDeviceEvent>,
+using EventsVariant = std::variant<immer::box<HDRModeEvent>, immer::box<PlugDeviceEvent>,
                                    immer::box<PairSignal>,
                                    immer::box<UnplugDeviceEvent>,
                                    immer::box<StreamSession>,

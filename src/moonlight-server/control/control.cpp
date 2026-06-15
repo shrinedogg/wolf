@@ -156,6 +156,27 @@ void run_control(int port,
         logs::log(logs::debug, "[ENET] Client not found for session: {}", ev->session_id);
       });
 
+  auto hdr_ev = event_bus->register_handler<immer::box<HDRModeEvent>>(
+      [&connected_clients](const immer::box<HDRModeEvent> &ev) {
+        for (auto &[peer, session] : *connected_clients.load()) {
+          if (session->session_id == ev->session_id) {
+            ControlHdrModePacket hdr_pkt = {};
+            hdr_pkt.header.type = pkts::HDR_MODE;
+            hdr_pkt.header.length = sizeof(ControlHdrModePacket) - sizeof(ControlPacket);
+            hdr_pkt.enabled = ev->enabled ? 1 : 0;
+            if (ev->enabled) {
+              hdr_pkt.metadata = default_hdr10_metadata();
+            }
+            std::string plaintext = {(char *)&hdr_pkt, sizeof(hdr_pkt)};
+            immer::box<std::shared_ptr<ENetPeer>> enet_client = {to_shared_ptr(peer)};
+            logs::log(logs::debug, "[ENET] Sending HDR mode (enabled={}) for session {}", hdr_pkt.enabled, ev->session_id);
+            encrypt_and_send(plaintext, session->aes_key, enet_client);
+            return;
+          }
+        }
+        logs::log(logs::debug, "[ENET] HDR mode: no connected client for session {}", ev->session_id);
+      });
+
   while (true) {
     if (enet_host_service(host.get(), &event, timeout.count()) > 0) {
       auto [client_ip, client_port] = get_ip((sockaddr *)&event.peer->address.address);

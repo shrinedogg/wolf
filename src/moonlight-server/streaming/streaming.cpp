@@ -82,7 +82,9 @@ std::pair<std::string, std::string> get_color_params(immer::box<events::VideoSes
     color_space = "bt709";
     break;
   case events::ColorSpace::BT2020:
-    color_space = "bt2020";
+    // HDR10: full BT.2020 + PQ (SMPTE ST 2084) colorimetry so the encoder tags the
+    // bitstream VUI as PQ rather than the SDR BT.2020 transfer.
+    color_space = "bt2100-pq";
     break;
   }
   return std::make_pair(color_range, color_space);
@@ -381,6 +383,14 @@ void start_streaming_video(immer::box<events::VideoSession> video_session,
   bool is_hdr = video_session->color_space == events::ColorSpace::BT2020;
   std::string video_format = is_hdr ? "P010_10LE" : "NV12";
   std::string profile = is_hdr ? "main-10" : "main";
+  // HDR10 static metadata on the encoder input caps (BT.2020 primaries, D65,
+  // 1000-nit mastering display) so nvcodec can emit the HDR10 SEI. Kept consistent
+  // with default_hdr10_metadata() sent in the HDR mode control message. Empty for
+  // SDR. Chromaticities are xy * 50000; mastering luminance is in 1/10000 cd/m2.
+  std::string hdr_metadata =
+      is_hdr ? ", mastering-display-info=(string)35400:14600:8500:39850:6550:2300:15635:16450:10000000:1"
+               ", content-light-level=(string)1000:400"
+             : "";
 
   auto pipeline = fmt::format(
       fmt::runtime(video_session->gst_pipeline),
@@ -400,8 +410,15 @@ void start_streaming_video(immer::box<events::VideoSession> video_session,
       fmt::arg("color_range", color_range),
       fmt::arg("video_format", video_format),
       fmt::arg("profile", profile),
+      fmt::arg("hdr_metadata", hdr_metadata),
       fmt::arg("host_port", video_session->port));
   logs::log(logs::debug, "Starting video pipeline: \n{}", pipeline);
+
+  // Tell the Moonlight client to enter (or leave) HDR mode for this session. The
+  // client engages HDR output based on this control message, so it is sent on
+  // every video (re)start. Handled on the control stream (see control.cpp).
+  event_bus->fire_event(immer::box<events::HDRModeEvent>(
+      events::HDRModeEvent{.session_id = video_session->session_id, .enabled = is_hdr}));
 
   bool enable_pacing = utils::get_env("WOLF_ENABLE_VIDEO_PACING", "TRUE") == std::string("TRUE");
   std::shared_ptr<custom_sink::UDPSink> udp_sink = std::make_shared<custom_sink::UDPSink>(custom_sink::UDPSink{

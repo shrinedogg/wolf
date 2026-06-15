@@ -353,6 +353,62 @@ struct ControlAdaptiveTriggerPacket {
   inputtino::PS5Joypad::TriggerEffect effect;
 };
 
+/**
+ * HDR10 static metadata sent to Moonlight in the HDR mode control message.
+ * Mirrors moonlight-common-c's SS_HDR_METADATA (Limelight.h): all fields are
+ * uint16_t, chromaticities are CIE 1931 xy * 50000, maxDisplayLuminance in nits,
+ * minDisplayLuminance in 1/10000 nit, MaxCLL/FALL in nits.
+ */
+#pragma pack(push, 1)
+struct SS_HDR_METADATA {
+  struct {
+    std::uint16_t x;
+    std::uint16_t y;
+  } displayPrimaries[3];
+  struct {
+    std::uint16_t x;
+    std::uint16_t y;
+  } whitePoint;
+  std::uint16_t maxDisplayLuminance;
+  std::uint16_t minDisplayLuminance;
+  std::uint16_t maxContentLightLevel;
+  std::uint16_t maxFrameAverageLightLevel;
+  std::uint16_t maxFullFrameLuminance;
+};
+static_assert(sizeof(SS_HDR_METADATA) == 26, "SS_HDR_METADATA must match the Moonlight wire layout (26 bytes)");
+
+/**
+ * Sent server->client (PACKET_TYPE HDR_MODE, 0x010e) to toggle HDR mode on the
+ * client and carry the HDR10 static metadata, mirroring Sunshine's
+ * control_hdr_mode_t.
+ */
+struct ControlHdrModePacket {
+  ControlPacket header;
+  std::uint8_t enabled;
+  SS_HDR_METADATA metadata;
+};
+static_assert(sizeof(ControlHdrModePacket) == 31, "ControlHdrModePacket must match the Moonlight wire layout (31 bytes)");
+#pragma pack(pop)
+
+/**
+ * Default HDR10 metadata (BT.2020 primaries, D65 white point, 1000-nit mastering
+ * display) used until the compositor's real color-management metadata is plumbed
+ * through. Chromaticities are the standard BT.2020 values * 50000.
+ */
+inline SS_HDR_METADATA default_hdr10_metadata() {
+  SS_HDR_METADATA m{};
+  m.displayPrimaries[0] = {35400, 14600}; // R: 0.708, 0.292
+  m.displayPrimaries[1] = {8500, 39850};  // G: 0.170, 0.797
+  m.displayPrimaries[2] = {6550, 2300};   // B: 0.131, 0.046
+  m.whitePoint = {15635, 16450};          // D65: 0.3127, 0.3290
+  m.maxDisplayLuminance = 1000;           // nits
+  m.minDisplayLuminance = 1;              // 1/10000 nit (0.0001 nit)
+  m.maxContentLightLevel = 1000;          // nits
+  m.maxFrameAverageLightLevel = 400;      // nits
+  m.maxFullFrameLuminance = 0;
+  return m;
+}
+
 struct ControlEncryptedPacket {
   ControlPacket header; // Always 0x0001 (see PACKET_TYPE ENCRYPTED)
   std::uint32_t seq;    // Monotonically increasing sequence number (used as IV for AES-GCM)
