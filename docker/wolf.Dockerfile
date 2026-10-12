@@ -43,13 +43,12 @@ RUN <<_GST_WAYLAND_DISPLAY
 
     # HDR / HEVC Main10: build from the shrinedogg fork which adds 10-bit RGB10A2
     # producer caps, the color-management-v1 capture, and the BT.2020/PQ two-pass
-    # render. Pinned to the Phase 1 HDR commit on feat/hdr-hevc-main10.
+    # render. Pinned to the sync commit on feat/hdr-hevc-main10: the 10-bit HDR
+    # chain plus the wl_drm fix on top of upstream stable 016b4fc (compiles
+    # clean with the cuda feature, verified 2026-10-12).
     git clone https://github.com/shrinedogg/gst-wayland-display
     cd gst-wayland-display
-    # Deliberately behind upstream's 016b4fc pin: this commit carries the
-    # 10-bit HDR chain. Re-pin once the gst fork's feat/hdr-hevc-main10 is
-    # synced onto upstream stable.
-    git checkout 2e01aa9
+    git checkout 1a1d765
     # Pinned because it can cause issues when RUST_VERSION isn't the absolute latest
     cargo install cargo-c@0.10.23 --locked
     cargo cinstall --features="cuda" --prefix=/usr/local/lib/x86_64-linux-gnu/ --libdir=/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
