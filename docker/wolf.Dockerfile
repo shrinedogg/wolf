@@ -46,6 +46,9 @@ RUN <<_GST_WAYLAND_DISPLAY
     # render. Pinned to the Phase 1 HDR commit on feat/hdr-hevc-main10.
     git clone https://github.com/shrinedogg/gst-wayland-display
     cd gst-wayland-display
+    # Deliberately behind upstream's 016b4fc pin: this commit carries the
+    # 10-bit HDR chain. Re-pin once the gst fork's feat/hdr-hevc-main10 is
+    # synced onto upstream stable.
     git checkout 2e01aa9
     # Pinned because it can cause issues when RUST_VERSION isn't the absolute latest
     cargo install cargo-c@0.10.23 --locked
@@ -115,7 +118,6 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 ENV GST_PLUGIN_PATH=/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0/
 # Copying out our custom compositor from the build stage
 COPY --from=wolf-builder /usr/local/lib/x86_64-linux-gnu/gstreamer-1.0/* $GST_PLUGIN_PATH
-COPY --from=wolf-builder /usr/local/lib/liblibgstwaylanddisplay* /usr/local/lib/
 
 WORKDIR /wolf
 

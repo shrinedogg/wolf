@@ -110,8 +110,15 @@ enum KEYBOARD_MODIFIERS : char {
 enum MOONLIGHT_MODIFIERS : short {
   M_SHIFT = 0x10,
   M_CTRL = 0x11,
+  M_MENU = 0x12,
   M_ALT = 0xA4,
-  M_META = 0x5B
+  M_META = 0x5B,
+  M_LSHIFT = 0xA0,
+  M_RSHIFT = 0xA1,
+  M_LCTRL = 0xA2,
+  M_RCTRL = 0xA3,
+  M_RALT = 0xA5,
+  M_RMETA = 0x5C
 };
 
 // make sure these structs are allocated in 1-byte blocks so the data aligns
@@ -266,7 +273,9 @@ enum MOTION_TYPE : uint8_t {
 
 constexpr uint8_t BATTERY_PERCENTAGE_UNKNOWN = 0xFF;
 
-enum BATTERY_STATE : unsigned short {
+// One byte on the wire -- must stay uint8_t, otherwise it eats the following battery_percentage
+// byte in CONTROLLER_BATTERY_PACKET and the percentage is always read as the trailing zero (0%).
+enum BATTERY_STATE : uint8_t {
   BATTERY_STATE_UNKNOWN = 0x0,
   BATTERY_NOT_PRESENT = 0x1,
   BATTERY_DISCHARGHING = 0x2,
