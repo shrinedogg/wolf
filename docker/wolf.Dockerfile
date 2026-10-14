@@ -48,7 +48,9 @@ RUN <<_GST_WAYLAND_DISPLAY
     # clean with the cuda feature, verified 2026-10-12).
     git clone https://github.com/shrinedogg/gst-wayland-display
     cd gst-wayland-display
-    git checkout 1a1d765
+    # a019902: diagnostic logging of rejected client dmabufs (gamescope
+    # EGL_BAD_ALLOC crashloop investigation, 2026-10-14).
+    git checkout a0199020bf6cd7fea95820cdcb33731374f9d4be
     # Pinned because it can cause issues when RUST_VERSION isn't the absolute latest
     cargo install cargo-c@0.10.23 --locked
     cargo cinstall --features="cuda" --prefix=/usr/local/lib/x86_64-linux-gnu/ --libdir=/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
