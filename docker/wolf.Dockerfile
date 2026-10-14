@@ -72,8 +72,10 @@ RUN --mount=type=cache,target=/cache/ccache \
     -DBUILD_FAKE_UDEV_CLI=ON \
     -DBUILD_TESTING=OFF \
     -G Ninja && \
-    ninja -C $CMAKE_BUILD_DIR wolf && \
-    ninja -C $CMAKE_BUILD_DIR fake-udev && \
+    # -j2: the 4-CPU/11.7GiB Docker Desktop VM OOMs the static-Boost TUs under
+    # QEMU at ninja's default parallelism (2026-10-14 v0.2.1 build failure).
+    ninja -j2 -C $CMAKE_BUILD_DIR wolf && \
+    ninja -j2 -C $CMAKE_BUILD_DIR fake-udev && \
     # We have to copy out the built executables because this will only be available inside the buildkit cache
     cp $CMAKE_BUILD_DIR/src/moonlight-server/wolf /wolf/wolf && \
     cp $CMAKE_BUILD_DIR/src/fake-udev/fake-udev /wolf/fake-udev
