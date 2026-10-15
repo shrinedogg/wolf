@@ -53,7 +53,7 @@ RUN <<_GST_WAYLAND_DISPLAY
     # whenever advertised, so its output images all failed to import).
     # Opt back in with GST_WAYLAND_DISPLAY_CLIENT_10BIT=1. Also carries the
     # dmabuf rejection diagnostics + A/B probe from 4d672d5.
-    git checkout 53b07a6132f31b252d3dd05f6e6df5ea1027dc21
+    git checkout 94a04360c439a34639c896f621960a56571a27e4
     # Pinned because it can cause issues when RUST_VERSION isn't the absolute latest
     cargo install cargo-c@0.10.23 --locked
     cargo cinstall --features="cuda" --prefix=/usr/local/lib/x86_64-linux-gnu/ --libdir=/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
