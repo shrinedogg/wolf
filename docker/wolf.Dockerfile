@@ -48,9 +48,12 @@ RUN <<_GST_WAYLAND_DISPLAY
     # clean with the cuda feature, verified 2026-10-12).
     git clone https://github.com/shrinedogg/gst-wayland-display
     cd gst-wayland-display
-    # 4d672d5: dmabuf rejection diagnostics + A/B self-alloc import probe
-    # (gamescope EGL_BAD_ALLOC crashloop investigation, 2026-10-14).
-    git checkout 4d672d5cb95f70f57c3d78e424464a12f25c8220
+    # 96ee75d: hide 10-bit RGB dmabuf formats from clients (NVIDIA 615
+    # rejects Vulkan-allocated XB30 imports; gamescope prefers XB30 output
+    # whenever advertised, so its output images all failed to import).
+    # Opt back in with GST_WAYLAND_DISPLAY_CLIENT_10BIT=1. Also carries the
+    # dmabuf rejection diagnostics + A/B probe from 4d672d5.
+    git checkout 96ee75d975aff535f062628d129272ca9e4b9f60
     # Pinned because it can cause issues when RUST_VERSION isn't the absolute latest
     cargo install cargo-c@0.10.23 --locked
     cargo cinstall --features="cuda" --prefix=/usr/local/lib/x86_64-linux-gnu/ --libdir=/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
