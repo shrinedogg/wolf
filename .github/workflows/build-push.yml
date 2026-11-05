@@ -1,0 +1,55 @@
+# Build and push shrinedogg/wolf from the cluster0 self-hosted runner.
+#
+# Runs only on the repo-scoped runner (label "wolf"), co-located dind sidecar:
+# the runner pod sets DOCKER_HOST=tcp://127.0.0.1:2375, which job steps
+# inherit, so the docker CLI/buildx talk to dind on pod loopback. dind's
+# daemon.json pulls a registry mirror (zot.biggs.dog) for the ghcr base image.
+#
+# Trigger is workflow_dispatch only: the hosted "Docker build" flow stays
+# valid until the runner is proven.
+#
+# Tag strategy: immutable full-sha tag, no "latest" (the release flow owns
+# versioned tags). An immutable tag makes the first push safe: it cannot
+# clobber a release tag.
+#
+# Prerequisites (workflow is inert until all are in place):
+#   - the biggs.dog runner app (cluster0 github-runner-wolf) is merged and
+#     Flux-reconciled, with the console-minted registration token in the
+#     1Password item shrinedogg-wolf-actions-runner / registration-token
+#   - the DOCKERHUB_TOKEN repository secret exists on this fork
+name: build-push
+
+on:
+  workflow_dispatch:
+
+# Serialize runs that share a ref. cancel-in-progress: false keeps an
+# in-flight build running to completion before the next one starts.
+concurrency:
+  group: build-push-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    runs-on: [self-hosted, linux, x64, wolf]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: shrinedogg
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -f docker/wolf.Dockerfile \
+            --build-arg BASE_IMAGE=ghcr.io/games-on-whales/gstreamer:1.26.7 \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            --provenance=false \
+            --sbom=false \
+            -t docker.io/shrinedogg/wolf:${{ github.sha }} \
+            --push .
